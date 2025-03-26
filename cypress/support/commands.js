@@ -133,36 +133,13 @@ Cypress.Commands.add("deleteUser", (_id = "testeID") => {
   });
 });
 
-Cypress.Commands.add("getQtdItems", (route) => {
+Cypress.Commands.add("getItem", ({ route, _id }) => {
   cy.request({
     method: "GET",
-    url: `https://serverest.dev/${route}`,
+    url: `https://serverest.dev/${route}/${_id}`,
+    failOnStatusCode: false,
   }).then((response) => {
-    return response.body.quantidade;
-  });
-});
-
-Cypress.Commands.add("deleteItem", ({ route, _id = "testeID", token }) => {
-  cy.getQtdItems(route).then((qtdItems) => {
-    // Para verificar o caso de deletar um registro inexistente, basta chamar o comando e não passar o parâmetro "_id"
-    cy.request({
-      method: "DELETE",
-      url: `https://serverest.dev/${route}/${_id}`,
-      headers: {
-        Authorization: token,
-      },
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      cy.getQtdItems(route).then((newQtdItems) => {
-        if (_id === "testeID") {
-          expect(response.body.message).to.eq("Nenhum registro excluído");
-          expect(newQtdItems).to.eq(qtdItems);
-        } else {
-          expect(response.body.message).to.eq("Registro excluído com sucesso");
-          expect(newQtdItems).to.eq(qtdItems - 1);
-        }
-      });
-    });
+    return response;
   });
 });
 
@@ -177,5 +154,109 @@ Cypress.Commands.add("addItem", ({ route, data, token }) => {
     failOnStatusCode: false,
   }).then((response) => {
     return response;
+  });
+});
+
+Cypress.Commands.add("addItemToCart", (token) => {
+  // Adicionando o produto
+  cy.addItem({
+    route: "produtos",
+    data: {
+      nome: "Teste Produto QA",
+      preco: 150,
+      descricao: "Produto QA",
+      quantidade: 20,
+    },
+    token,
+  }).then((response) => {
+    const productId = response.body._id;
+    // Adicionando o produto cadastrado ao carrinho
+    cy.addItem({
+      route: "carrinhos",
+      data: {
+        produtos: [
+          {
+            idProduto: productId,
+            quantidade: 10,
+          },
+        ],
+      },
+      token,
+    }).then((response) => {
+      return { response, productId };
+    });
+  });
+});
+
+Cypress.Commands.add("deleteItem", ({ route, _id = "testeID", token }) => {
+  // Para verificar o caso de deletar um registro inexistente, basta chamar o comando e não passar o parâmetro "_id"
+  cy.request({
+    method: "DELETE",
+    url: `https://serverest.dev/${route}/${_id}`,
+    headers: {
+      Authorization: token,
+    },
+    failOnStatusCode: false,
+  }).then((response) => {
+    return response;
+  });
+});
+
+Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
+  const setData = (route) => {
+    const routeData = {
+      "usuarios": {
+        nome: Cypress.env("NOME"),
+        email: Cypress.env("EMAIL"),
+        password: Cypress.env("PASSWORD"),
+        administrador: Cypress.env("ADMIN"),
+      },
+      "/produtos": {
+        nome: Cypress.env("NOME_PRODUTO"),
+        preco: Cypress.env("PRECO"),
+        descricao: Cypress.env("DESCRICAO"),
+        quantidade: Cypress.env("QUANTIDADE"),
+      },
+    };
+
+    return routeData[route];
+  };
+
+  const setBody = (route, data) => {
+    const bodyData = {
+      "usuarios": {
+        nome: data.nome || Cypress.env("NOME"),
+        email: data.email || Cypress.env("EMAIL"),
+        password: data.password || Cypress.env("PASSWORD"),
+        administrador: data.admin || Cypress.env("ADMIN"),
+      },
+      "/produtos": {
+        nome: data.nome || Cypress.env("NOME_PRODUTO"),
+        preco: data.preco || Cypress.env("PRECO"),
+        descricao: data.descricao || Cypress.env("DESCRICAO"),
+        quantidade: data.quantidade || Cypress.env("QUANTIDADE"),
+      },
+    };
+
+    return bodyData[route];
+  };
+
+  cy.addItem({
+    route,
+    data: setData(route),
+    token,
+  }).then((response) => {
+    const _id = response.body._id;
+    cy.request({
+      method: "PUT",
+      url: `https://serverest.dev/${route}/${_id}`,
+      body: setBody(route, data),
+      headers: {
+        Authorization: token,
+      },
+      failOnStatusCode: false,
+    }).then((response) => {
+      return { response, data: setBody(route, data), _id };
+    });
   });
 });
