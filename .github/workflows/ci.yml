@@ -1,0 +1,41 @@
+name: API tests - ServeRest
+on: push
+jobs:
+  test:
+    name: Cypress run
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          [
+            cypress/e2e/usuarios.cy.js,
+            cypress/e2e/produtos.cy.js,
+            cypress/e2e/carrinhos.cy.js,
+            cypress/e2e/rota_admin.cy.js,
+          ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cypress run for ${{ matrix.spec }}
+        uses: cypress-io/github-action@v6
+        with:
+          record: true
+          parallel: true
+          group: "${{ matrix.spec }}"
+          spec: ${{ matrix.spec }}
+        env:
+          CYPRESS_USER_DATA: ${{ secrets.USER_DATA }}
+          CYPRESS_USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          CYPRESS_USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+          CYPRESS_NEW_USER_DATA: ${{ secrets.NEW_USER_DATA }}
+          CYPRESS_NOME: ${{ secrets.NOME }}
+          CYPRESS_EMAIL: ${{ secrets.EMAIL }}
+          CYPRESS_PASSWORD: ${{ secrets.PASSWORD }}
+          CYPRESS_ADMIN: ${{ secrets.ADMIN }}
+          CYPRESS_PRODUCT_DATA: ${{ secrets.PRODUCT_DATA }}
+          CYPRESS_NOME_PRODUTO: ${{ secrets.NOME_PRODUTO }}
+          CYPRESS_PRECO: ${{ secrets.PRECO }}
+          CYPRESS_DESCRICAO: ${{ secrets.DESCRICAO }}
+          CYPRESS_QUANTIDADE: ${{ secrets.QUANTIDADE }}
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
