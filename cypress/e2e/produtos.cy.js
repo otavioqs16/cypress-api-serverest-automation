@@ -1,33 +1,29 @@
-const token = window.localStorage.getItem("serverest/userToken");
+const productData = Cypress.env("PRODUCT_DATA");
+let token, userId;
 
-describe("ServeRest API Tests - Carrinhos", () => {
+describe("ServeRest API Tests - Produtos", () => {
   before(() => {
     cy.request({
       method: "POST",
-      url: "https://serverest.dev/usuarios",
-      body: {
-        nome: "QA Automation",
-        email: "email@qa.com",
-        password: "teste",
-        administrador: "true",
-      },
+      url: `${Cypress.config("baseUrl")}/usuarios`,
+      body: Cypress.env("USER_DATA"),
     }).then((response) => {
       expect(response.status).to.eq(201);
-      Cypress.env("USER_ID", response.body._id);
+      userId = response.body._id;
     });
   });
 
   beforeEach(() => {
     cy.session(Cypress.env("USER_EMAIL"), () => {
-      cy.request("POST", "https://serverest.dev/login", {
-        email: "email@qa.com",
-        password: "teste",
+      cy.request("POST", `${Cypress.config("baseUrl")}/login`, {
+        email: Cypress.env("USER_EMAIL"),
+        password: Cypress.env("USER_PASSWORD"),
       }).then((response) => {
         window.localStorage.setItem(
           "serverest/userToken",
           response.body.authorization
         );
-        Cypress.env("USER_TOKEN", response.body.authorization);
+        token = response.body.authorization;
       });
     });
   });
@@ -43,21 +39,34 @@ describe("ServeRest API Tests - Carrinhos", () => {
       });
     });
     it("Consultar produto pelo _id", () => {
-      cy.request({
-        method: "GET",
-        url: "https://serverest.dev/produtos?_id=BeeJh5lz3k6kSIzA",
+      cy.addItem({
+        route: "produtos",
+        data: productData,
+        token,
       }).then((response) => {
-        expect(response.status).to.eq(200);
-        expect(response.body.quantidade).to.eq(1);
-        expect(response.body.produtos[0]._id).to.eq("BeeJh5lz3k6kSIzA");
-        expect(response.body.produtos).to.have.lengthOf(1);
+        const productId = response.body._id;
+        cy.request({
+          method: "GET",
+          url: `${Cypress.config("baseUrl")}/produtos?_id=${productId}`,
+        }).then((response) => {
+          expect(response.status).to.eq(200);
+          expect(response.body.quantidade).to.eq(1);
+          expect(response.body.produtos[0]._id).to.eq(productId);
+          expect(response.body.produtos).to.have.lengthOf(1);
+
+          cy.deleteItem({
+            route: "produtos",
+            _id: productId,
+            token,
+          });
+        });
       });
     });
 
     it("Consultar produto por _id inexistente", () => {
       cy.request({
         method: "GET",
-        url: "https://serverest.dev/produtos?_id=123",
+        url: `${Cypress.config("baseUrl")}/produtos?_id=123`,
       }).then((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.quantidade).to.eq(0);
@@ -68,28 +77,27 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto pelo nome", () => {
       cy.addItem({
         route: "produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
-        token: Cypress.env("USER_TOKEN"),
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.request({
           method: "GET",
-          url: "https://serverest.dev/produtos?nome=Teste Produto QA",
+          url: `${Cypress.config("baseUrl")}/produtos?nome=${Cypress.env(
+            "NOME_PRODUTO"
+          )}`,
         }).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body.quantidade).to.eq(1);
-          expect(response.body.produtos[0].nome).to.eq("Teste Produto QA");
+          expect(response.body.produtos[0].nome).to.eq(
+            Cypress.env("NOME_PRODUTO")
+          );
           expect(response.body.produtos).to.have.lengthOf(1);
 
           cy.deleteItem({
             route: "produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            _id: productId,
+            token,
           });
         });
       });
@@ -98,7 +106,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto por nome inexistente", () => {
       cy.request({
         method: "GET",
-        url: "https://serverest.dev/produtos?nome=Teste nome inexistente",
+        url: `${Cypress.config(
+          "baseUrl"
+        )}/produtos?nome=Teste nome inexistente`,
       }).then((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.quantidade).to.eq(0);
@@ -109,31 +119,28 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto pelo preço", () => {
       cy.addItem({
         route: "produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
-        token: Cypress.env("USER_TOKEN"),
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.request({
           method: "GET",
-          url: "https://serverest.dev/produtos?preco=20",
+          url: `${Cypress.config("baseUrl")}/produtos?preco=${Cypress.env(
+            "PRECO"
+          )}`,
         }).then((response) => {
           const quantity = response.body.quantidade;
           expect(response.status).to.eq(200);
           expect(response.body.quantidade).to.eq(quantity);
           for (let i = 0; i < response.body.produtos.length; i++) {
-            expect(response.body.produtos[i].preco).to.eq(20);
+            expect(response.body.produtos[i].preco).to.eq(Cypress.env("PRECO"));
           }
           expect(response.body.produtos).to.have.lengthOf(quantity);
 
           cy.deleteItem({
             route: "produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            _id: productId,
+            token,
           });
         });
       });
@@ -142,7 +149,7 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto por preço inexistente", () => {
       cy.request({
         method: "GET",
-        url: "https://serverest.dev/produtos?preco=3203920392302930",
+        url: `${Cypress.config("baseUrl")}/produtos?preco=3203920392302930`,
       }).then((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.quantidade).to.eq(0);
@@ -153,33 +160,30 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto pela descrição", () => {
       cy.addItem({
         route: "produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
-        token: Cypress.env("USER_TOKEN"),
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.request({
           method: "GET",
-          url: "https://serverest.dev/produtos?descricao=Produto QA",
+          url: `${Cypress.config("baseUrl")}/produtos?descricao=${Cypress.env(
+            "DESCRICAO"
+          )}`,
         }).then((response) => {
           const quantity = response.body.quantidade;
           expect(response.status).to.eq(200);
           expect(response.body.quantidade).to.eq(quantity);
           for (let i = 0; i < response.body.produtos.length; i++) {
-            expect(
-              response.body.produtos[i].descricao.toLowerCase()
-            ).to.include("produto qa");
+            expect(response.body.produtos[i].descricao).to.eq(
+              Cypress.env("DESCRICAO")
+            );
           }
           expect(response.body.produtos).to.have.lengthOf(quantity);
 
           cy.deleteItem({
             route: "produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            _id: productId,
+            token,
           });
         });
       });
@@ -188,7 +192,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto por descrição inexistente", () => {
       cy.request({
         method: "GET",
-        url: "https://serverest.dev/produtos?descricao=Teste Descrição Inexistente",
+        url: `${Cypress.config(
+          "baseUrl"
+        )}/produtos?descricao=Teste Descrição Inexistente`,
       }).then((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.quantidade).to.eq(0);
@@ -199,31 +205,30 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto pela quantidade", () => {
       cy.addItem({
         route: "produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
-        token: Cypress.env("USER_TOKEN"),
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.request({
           method: "GET",
-          url: "https://serverest.dev/produtos?quantidade=20",
+          url: `${Cypress.config("baseUrl")}/produtos?quantidade=${Cypress.env(
+            "QUANTIDADE"
+          )}`,
         }).then((response) => {
           const quantity = response.body.quantidade;
           expect(response.status).to.eq(200);
           expect(response.body.quantidade).to.eq(quantity);
           for (let i = 0; i < response.body.produtos.length; i++) {
-            expect(response.body.produtos[i].quantidade).to.eq(20);
+            expect(response.body.produtos[i].quantidade).to.eq(
+              Cypress.env("QUANTIDADE")
+            );
           }
           expect(response.body.produtos).to.have.lengthOf(quantity);
 
           cy.deleteItem({
             route: "produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            _id: productId,
+            token,
           });
         });
       });
@@ -232,7 +237,7 @@ describe("ServeRest API Tests - Carrinhos", () => {
     it("Consultar produto por quantidade inexistente", () => {
       cy.request({
         method: "GET",
-        url: "https://serverest.dev/produtos?quantidade=123213213213",
+        url: `${Cypress.config("baseUrl")}/produtos?quantidade=123213213213`,
       }).then((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.quantidade).to.eq(0);
@@ -244,45 +249,34 @@ describe("ServeRest API Tests - Carrinhos", () => {
   context("POST /produtos", () => {
     it("Cadastrar produto com sucesso", () => {
       cy.addItem({
-        route: "/produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         expect(response.status).to.eq(201);
         expect(response.body.message).to.eq("Cadastro realizado com sucesso");
         expect(response.body._id).to.be.a("string");
 
         cy.deleteItem({
           route: "produtos",
-          _id,
-          token: Cypress.env("USER_TOKEN"),
+          _id: productId,
+          token,
         });
       });
     });
 
     it("Cadastrar produto com nome já cadastrado", () => {
-      const data = {
-        nome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      };
       cy.addItem({
         route: "produtos",
-        data,
-        token: Cypress.env("USER_TOKEN"),
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.addItem({
           route: "produtos",
-          data,
-          token: Cypress.env("USER_TOKEN"),
+          data: productData,
+          token,
         }).then((response) => {
           expect(response.status).to.eq(400);
           expect(response.body.message).to.eq(
@@ -292,25 +286,19 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
           cy.deleteItem({
             route: "produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            _id: productId,
+            token,
           });
         });
       });
     });
 
     it("Cadastrar usuário com campos obrigatórios não enviados no body", () => {
-      const data = {
-        nome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      };
       // Nome não enviado
       cy.addItem({
-        route: "/produtos",
-        data: { ...data, nome: undefined },
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: { ...productData, nome: undefined },
+        token,
       }).then((response) => {
         expect(response.status).to.eq(400);
         expect(response.body.nome).to.eq("nome é obrigatório");
@@ -320,9 +308,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
       // Preço não enviado
       cy.addItem({
-        route: "/produtos",
-        data: { ...data, preco: undefined },
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: { ...productData, preco: undefined },
+        token,
       }).then((response) => {
         expect(response.status).to.eq(400);
         expect(response.body.preco).to.eq("preco é obrigatório");
@@ -332,9 +320,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
       // Descrição não enviada
       cy.addItem({
-        route: "/produtos",
-        data: { ...data, descricao: undefined },
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: { ...productData, descricao: undefined },
+        token,
       }).then((response) => {
         expect(response.status).to.eq(400);
         expect(response.body.descricao).to.eq("descricao é obrigatório");
@@ -344,9 +332,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
       // Quantidade não enviada
       cy.addItem({
-        route: "/produtos",
-        data: { ...data, quantidade: undefined },
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: { ...productData, quantidade: undefined },
+        token,
       }).then((response) => {
         expect(response.status).to.eq(400);
         expect(response.body.quantidade).to.eq("quantidade é obrigatório");
@@ -357,13 +345,8 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
     it("Cadastrar produto com token ausente", () => {
       cy.addItem({
-        route: "/produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
+        route: "produtos",
+        data: productData,
       }).then((response) => {
         expect(response.status).to.eq(401);
         expect(response.body.message).to.eq(
@@ -376,33 +359,27 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
   context("GET /produtos/{_id}", () => {
     it("Buscar produto por ID", () => {
-      const data = {
-        nome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      };
       cy.addItem({
-        route: "/produtos",
-        data,
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.getItem({
           route: "produtos",
-          _id,
+          _id: productId,
         }).then((response) => {
           expect(response.status).to.eq(200);
-          expect(response.body.nome).to.eq(data.nome);
-          expect(response.body.preco).to.eq(data.preco);
-          expect(response.body.descricao).to.eq(data.descricao);
-          expect(response.body.quantidade).to.eq(data.quantidade);
-          expect(response.body._id).to.eq(_id);
+          expect(response.body.nome).to.eq(productData.nome);
+          expect(response.body.preco).to.eq(productData.preco);
+          expect(response.body.descricao).to.eq(productData.descricao);
+          expect(response.body.quantidade).to.eq(productData.quantidade);
+          expect(response.body._id).to.eq(productId);
 
           cy.deleteItem({
-            route: "/produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            route: "produtos",
+            _id: productId,
+            token,
           });
         });
       });
@@ -422,24 +399,19 @@ describe("ServeRest API Tests - Carrinhos", () => {
   context("DELETE /produtos/{_id})", () => {
     it("Excluir produto com sucesso", () => {
       cy.addItem({
-        route: "/produtos",
-        data: {
-          nome: "Teste Produto QA",
-          preco: 150,
-          descricao: "Produto QA",
-          quantidade: 20,
-        },
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         cy.deleteItem({
-          route: "/produtos",
-          _id,
-          token: Cypress.env("USER_TOKEN"),
+          route: "produtos",
+          _id: productId,
+          token,
         }).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body.message).to.eq("Registro excluído com sucesso");
-          cy.getItem({ route: "/produtos", _id }).then((response) => {
+          cy.getItem({ route: "produtos", _id: productId }).then((response) => {
             expect(response.status).to.eq(400);
             expect(response.body.message).to.eq("Produto não encontrado");
           });
@@ -449,8 +421,8 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
     it("Excluir produto inexistente", () => {
       cy.deleteItem({
-        route: "/produtos",
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        token,
       }).then((response) => {
         expect(response.status).to.eq(200);
         expect(response.body.message).to.eq("Nenhum registro excluído");
@@ -458,49 +430,47 @@ describe("ServeRest API Tests - Carrinhos", () => {
     });
 
     it("Excluir produto com token ausente", () => {
-      const data = {
-        nome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      };
       cy.addItem({
-        route: "/produtos",
-        data,
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
-        cy.deleteItem({ route: "/produtos", _id }).then((response) => {
-          expect(response.status).to.eq(401);
-          expect(response.body.message).to.eq(
-            "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
-          );
-          cy.getItem({ route: "/produtos", _id }).then((response) => {
-            expect(response.status).to.eq(200);
-            expect(response.body.nome).to.eq(data.nome);
-            expect(response.body.preco).to.eq(data.preco);
-            expect(response.body.descricao).to.eq(data.descricao);
-            expect(response.body.quantidade).to.eq(data.quantidade);
-            expect(response.body._id).to.eq(_id);
+        const productId = response.body._id;
+        cy.deleteItem({ route: "produtos", _id: productId }).then(
+          (response) => {
+            expect(response.status).to.eq(401);
+            expect(response.body.message).to.eq(
+              "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+            );
+            cy.getItem({ route: "produtos", _id: productId }).then(
+              (response) => {
+                expect(response.status).to.eq(200);
+                expect(response.body.nome).to.eq(productData.nome);
+                expect(response.body.preco).to.eq(productData.preco);
+                expect(response.body.descricao).to.eq(productData.descricao);
+                expect(response.body.quantidade).to.eq(productData.quantidade);
+                expect(response.body._id).to.eq(productId);
 
-            cy.deleteItem({
-              route: "produtos",
-              _id,
-              token: Cypress.env("USER_TOKEN"),
-            });
-          });
-        });
+                cy.deleteItem({
+                  route: "produtos",
+                  _id: productId,
+                  token,
+                });
+              }
+            );
+          }
+        );
       });
     });
 
     it("Excluir produto que faz parte de um carrinho", () => {
-      cy.addItemToCart(Cypress.env("USER_TOKEN")).then((cartResponse) => {
+      cy.addItemToCart(token).then((cartResponse) => {
         const productId = cartResponse.productId;
         const cartId = cartResponse.response.body._id;
         cy.deleteItem({
           route: "produtos",
           _id: productId,
-          token: Cypress.env("USER_TOKEN"),
+          token,
         }).then((response) => {
           expect(response.status).to.eq(400);
           expect(response.body.message).to.eq(
@@ -511,12 +481,12 @@ describe("ServeRest API Tests - Carrinhos", () => {
           cy.deleteItem({
             route: "carrinhos/cancelar-compra",
             _id: "",
-            token: Cypress.env("USER_TOKEN"),
+            token,
           }).then(() => {
             cy.deleteItem({
               route: "produtos",
               _id: productId,
-              token: Cypress.env("USER_TOKEN"),
+              token,
             });
           });
         });
@@ -527,12 +497,12 @@ describe("ServeRest API Tests - Carrinhos", () => {
   context("PUT /produtos/{_id}", () => {
     it("Alterar nome do produto", () => {
       cy.editItem({
-        route: "/produtos",
+        route: "produtos",
         data: { nome: "TESTANDO NEW COMMAND" },
-        token: Cypress.env("USER_TOKEN"),
+        token,
       }).then(({ response, data, _id }) => {
         expect(response.status).to.eq(200);
-        cy.getItem({ route: "/produtos", _id }).then((response) => {
+        cy.getItem({ route: "produtos", _id }).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body.nome).to.eq("TESTANDO NEW COMMAND");
           expect(response.body.preco).to.eq(data.preco);
@@ -541,9 +511,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
           expect(response.body._id).to.eq(_id);
 
           cy.deleteItem({
-            route: "/produtos",
+            route: "produtos",
             _id,
-            token: Cypress.env("USER_TOKEN"),
+            token,
           });
         });
       });
@@ -551,12 +521,12 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
     it("Alterar preço do produto", () => {
       cy.editItem({
-        route: "/produtos",
+        route: "produtos",
         data: { preco: 250 },
-        token: Cypress.env("USER_TOKEN"),
+        token,
       }).then(({ response, data, _id }) => {
         expect(response.status).to.eq(200);
-        cy.getItem({ route: "/produtos", _id }).then((response) => {
+        cy.getItem({ route: "produtos", _id }).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body.nome).to.eq(data.nome);
           expect(response.body.preco).to.eq(250);
@@ -565,9 +535,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
           expect(response.body._id).to.eq(_id);
 
           cy.deleteItem({
-            route: "/produtos",
+            route: "produtos",
             _id,
-            token: Cypress.env("USER_TOKEN"),
+            token,
           });
         });
       });
@@ -575,12 +545,12 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
     it("Alterar descrição do produto", () => {
       cy.editItem({
-        route: "/produtos",
+        route: "produtos",
         data: { descricao: "Altera Descrição" },
-        token: Cypress.env("USER_TOKEN"),
+        token,
       }).then(({ response, data, _id }) => {
         expect(response.status).to.eq(200);
-        cy.getItem({ route: "/produtos", _id }).then((response) => {
+        cy.getItem({ route: "produtos", _id }).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body.nome).to.eq(data.nome);
           expect(response.body.preco).to.eq(data.preco);
@@ -589,9 +559,9 @@ describe("ServeRest API Tests - Carrinhos", () => {
           expect(response.body._id).to.eq(_id);
 
           cy.deleteItem({
-            route: "/produtos",
+            route: "produtos",
             _id,
-            token: Cypress.env("USER_TOKEN"),
+            token,
           });
         });
       });
@@ -599,12 +569,12 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
     it("Alterar quantidade do produto", () => {
       cy.editItem({
-        route: "/produtos",
+        route: "produtos",
         data: { quantidade: 50 },
-        token: Cypress.env("USER_TOKEN"),
+        token,
       }).then(({ response, data, _id }) => {
         expect(response.status).to.eq(200);
-        cy.getItem({ route: "/produtos", _id }).then((response) => {
+        cy.getItem({ route: "produtos", _id }).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body.nome).to.eq(data.nome);
           expect(response.body.preco).to.eq(data.preco);
@@ -613,45 +583,37 @@ describe("ServeRest API Tests - Carrinhos", () => {
           expect(response.body._id).to.eq(_id);
 
           cy.deleteItem({
-            route: "/produtos",
+            route: "produtos",
             _id,
-            token: Cypress.env("USER_TOKEN"),
+            token,
           });
         });
       });
     });
 
     it("Cadastrar produto utilizando PUT", () => {
-      const uniqueProduct = Date.now();
-      const data = {
-        nome: `PUT QA - ${uniqueProduct}`,
-        preco: 50,
-        descricao: "Teste QA",
-        quantidade: 300,
-      };
-
       cy.addItem({
-        route: "/produtos",
-        data,
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        data: productData,
+        token,
       }).then((response) => {
-        const _id = response.body._id;
+        const productId = response.body._id;
         expect(response.status).to.eq(201);
         expect(response.body.message).to.eq("Cadastro realizado com sucesso");
         expect(response.body._id).to.be.a("string");
 
-        cy.getItem({ route: "/produtos", _id }).then((response) => {
+        cy.getItem({ route: "produtos", _id: productId }).then((response) => {
           expect(response.status).to.eq(200);
-          expect(response.body.nome).to.eq(data.nome);
-          expect(response.body.preco).to.eq(data.preco);
-          expect(response.body.descricao).to.eq(data.descricao);
-          expect(response.body.quantidade).to.eq(data.quantidade);
-          expect(response.body._id).to.eq(_id);
+          expect(response.body.nome).to.eq(productData.nome);
+          expect(response.body.preco).to.eq(productData.preco);
+          expect(response.body.descricao).to.eq(productData.descricao);
+          expect(response.body.quantidade).to.eq(productData.quantidade);
+          expect(response.body._id).to.eq(productId);
 
           cy.deleteItem({
-            route: "/produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            route: "produtos",
+            _id: productId,
+            token,
           });
         });
       });
@@ -659,19 +621,20 @@ describe("ServeRest API Tests - Carrinhos", () => {
 
     it("Alterar para nome de produto já existente", () => {
       cy.addItem({
-        route: "/produtos",
+        route: "produtos",
         data: {
           nome: "TESTE QA DUP",
           preco: 150,
           descricao: "Produto QA",
           quantidade: 20,
         },
-        token: Cypress.env("USER_TOKEN"),
-      }).then(() => {
+        token,
+      }).then((response) => {
+        const dupProductId = response.body._id;
         cy.editItem({
-          route: "/produtos",
+          route: "produtos",
           data: { nome: "TESTE QA DUP" },
-          token: Cypress.env("USER_TOKEN"),
+          token,
         }).then(({ response, _id }) => {
           expect(response.status).to.eq(400);
           expect(response.body.message).to.eq(
@@ -679,33 +642,19 @@ describe("ServeRest API Tests - Carrinhos", () => {
           );
 
           cy.deleteItem({
-            route: "/produtos",
-            _id,
-            token: Cypress.env("USER_TOKEN"),
+            route: "produtos",
+            _id: dupProductId,
+            token,
+          }).then(() => {
+            cy.deleteItem({ route: "produtos", _id, token });
           });
         });
       });
     });
 
     it("Editar produto com token ausente", () => {
-      const data = {
-        mome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      };
-      cy.addItem({
-        route: "produtos",
-        data,
-        token: Cypress.env("USER_TOKEN"),
-      }).then((response) => {
-        const _id = response.body._id;
-        cy.request({
-          method: "PUT",
-          url: `https://serverest.dev/produtos/${_id}`,
-          body: data,
-          failOnStatusCode: false,
-        }).then((response) => {
+      cy.editItem({ route: "produtos", data: productData }).then(
+        ({ response, _id }) => {
           expect(response.status).to.eq(401);
           expect(response.body.message).to.eq(
             "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
@@ -715,17 +664,16 @@ describe("ServeRest API Tests - Carrinhos", () => {
           cy.deleteItem({
             route: "produtos",
             _id,
-            token: Cypress.env("USER_TOKEN"),
+            token,
           });
-        });
-      });
+        }
+      );
     });
   });
+});
 
-  after(() => {
-    const userId = Cypress.env("USER_ID");
-    cy.deleteItem({ route: "usuarios", _id: userId }).then((response) => {
-      expect(response.status).to.eq(200);
-    });
+after(() => {
+  cy.deleteItem({ route: "usuarios", _id: userId }).then((response) => {
+    expect(response.status).to.eq(200);
   });
 });

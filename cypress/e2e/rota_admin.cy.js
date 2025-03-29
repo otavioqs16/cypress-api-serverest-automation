@@ -1,10 +1,11 @@
-const token = window.localStorage.getItem("serverest/userToken");
+const productData = Cypress.env("PRODUCT_DATA");
+let token, userId;
 
-describe("API Tests - ServeRest", () => {
+describe("ServeRest API Tests - Rota exclusiva para Admin", () => {
   before(() => {
     cy.request({
       method: "POST",
-      url: "https://serverest.dev/usuarios",
+      url: `${Cypress.config("baseUrl")}/usuarios`,
       body: {
         nome: "QA Automation",
         email: "not-admin@qa.com",
@@ -13,13 +14,13 @@ describe("API Tests - ServeRest", () => {
       },
     }).then((response) => {
       expect(response.status).to.eq(201);
-      Cypress.env("USER_ID", response.body._id);
+      userId = response.body._id;
     });
   });
 
   beforeEach(() => {
     cy.session("not admin user", () => {
-      cy.request("POST", "https://serverest.dev/login", {
+      cy.request("POST", `${Cypress.config("baseUrl")}/login`, {
         email: "not-admin@qa.com",
         password: "teste",
       }).then((response) => {
@@ -27,21 +28,16 @@ describe("API Tests - ServeRest", () => {
           "serverest/userToken",
           response.body.authorization
         );
-        Cypress.env("USER_TOKEN", response.body.authorization);
+        token = response.body.authorization;
       });
     });
   });
 
   it("Cadastrar produto sem permissão de Admin", () => {
     cy.addItem({
-      route: "/produtos",
-      data: {
-        nome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      },
-      token: Cypress.env("USER_TOKEN"),
+      route: "produtos",
+      data: productData,
+      token,
     }).then((response) => {
       expect(response.status).to.eq(403);
       expect(response.body.message).to.eq(
@@ -53,20 +49,15 @@ describe("API Tests - ServeRest", () => {
 
   it("Excluir produto sem permissão de Admin", () => {
     cy.addItem({
-      route: "/produtos",
-      data: {
-        nome: "Teste Produto QA",
-        preco: 150,
-        descricao: "Produto QA",
-        quantidade: 20,
-      },
-      token: Cypress.env("USER_TOKEN"),
+      route: "produtos",
+      data: productData,
+      token,
     }).then((response) => {
-      const _id = response.body._id;
+      const productId = response.body._id;
       cy.deleteItem({
-        route: "/produtos",
-        _id,
-        token: Cypress.env("USER_TOKEN"),
+        route: "produtos",
+        _id: productId,
+        token,
       }).then((response) => {
         expect(response.status).to.eq(403);
         expect(response.body.message).to.eq(
@@ -78,8 +69,8 @@ describe("API Tests - ServeRest", () => {
 
   it("Excluir produto inexistente sem permissão de Admin", () => {
     cy.deleteItem({
-      route: "/produtos",
-      token: Cypress.env("USER_TOKEN"),
+      route: "produtos",
+      token,
     }).then((response) => {
       expect(response.status).to.eq(403);
       expect(response.body.message).to.eq(
@@ -91,7 +82,7 @@ describe("API Tests - ServeRest", () => {
   it("Editar produto sem permissão de Admin", () => {
     cy.request({
       method: "PUT",
-      url: "https://serverest.dev/produtos/BeeJh5lz3k6kSIzA",
+      url: `${Cypress.config("baseUrl")}/produtos/BeeJh5lz3k6kSIzA`,
       body: {
         nome: "Logitech MX Vertical",
         preco: 470,
@@ -99,7 +90,7 @@ describe("API Tests - ServeRest", () => {
         quantidade: 381,
       },
       headers: {
-        Authorization: Cypress.env("USER_TOKEN"),
+        Authorization: token,
       },
       failOnStatusCode: false,
     }).then((response) => {
@@ -111,7 +102,6 @@ describe("API Tests - ServeRest", () => {
   });
 
   after(() => {
-    const userId = Cypress.env("USER_ID");
     cy.deleteItem({ route: "usuarios", _id: userId }).then((response) => {
       expect(response.status).to.eq(200);
     });

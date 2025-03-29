@@ -23,130 +23,10 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-
-Cypress.Commands.add("editUser", (data = {}) => {
-  const {
-    nome = Cypress.env("NOME"),
-    email = Cypress.env("EMAIL"),
-    password = Cypress.env("PASSWORD"),
-    admin = Cypress.env("ADMIN"),
-  } = data;
-
-  cy.request({
-    method: "POST",
-    url: "https://serverest.dev/usuarios",
-    body: {
-      nome: Cypress.env("NOME"),
-      email: Cypress.env("EMAIL"),
-      password: Cypress.env("PASSWORD"),
-      administrador: Cypress.env("ADMIN"),
-    },
-  }).then((response) => {
-    const _id = response.body._id;
-    cy.request({
-      method: "PUT",
-      url: `https://serverest.dev/usuarios/${_id}`,
-      body: { nome, email, password, administrador: admin },
-      failOnStatusCode: false,
-    }).then((response) => {
-      if (response.status === 200) {
-        cy.request({
-          method: "GET",
-          url: `https://serverest.dev/usuarios/${_id}`,
-        }).then((response) => {
-          expect(response.status).to.eq(200);
-          expect(response.body.nome).to.eq(nome);
-          expect(response.body.email).to.eq(email);
-          expect(response.body.password).to.eq(password);
-          expect(response.body.administrador).to.eq(admin);
-          expect(response.body._id).to.eq(_id);
-
-          cy.deleteUser(_id);
-        });
-      } else if (response.status === 400) {
-        expect(response.body.message).to.eq("Este email já está sendo usado");
-        cy.deleteUser(_id);
-      }
-    });
-  });
-});
-
-Cypress.Commands.add("editUserWithRegisteredEmail", (email) => {
-  cy.request({
-    method: "POST",
-    url: "https://serverest.dev/usuarios",
-    body: {
-      nome: Cypress.env("NOME"),
-      email: Cypress.env("EMAIL"),
-      password: Cypress.env("PASSWORD"),
-      administrador: Cypress.env("ADMIN"),
-    },
-  }).then((response) => {
-    const _id = response.body._id;
-    cy.request({
-      method: "PUT",
-      url: `https://serverest.dev/usuarios/${_id}`,
-      body: {
-        nome: Cypress.env("NOME"),
-        email: email,
-        password: Cypress.env("PASSWORD"),
-        administrador: Cypress.env("ADMIN"),
-      },
-      failOnStatusCode: false,
-    }).then((response) => {
-      expect(response.status).to.eq(400);
-      expect(response.body.message).to.eq("Este email já está sendo usado");
-      cy.deleteUser(_id);
-    });
-  });
-});
-
-Cypress.Commands.add("getQtdUsers", () => {
-  cy.request({
-    method: "GET",
-    url: "https://serverest.dev/usuarios",
-  }).then((response) => {
-    return response.body.quantidade;
-  });
-});
-
-Cypress.Commands.add("deleteUser", (_id = "testeID") => {
-  cy.getQtdUsers().then((qtdUsers) => {
-    // Para verificar o caso de deletar um registro inexistente, basta chamar o comando e não passar nenhum parâmetro
-    cy.request({
-      method: "DELETE",
-      url: `https://serverest.dev/usuarios/${_id}`,
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      if (_id === "testeID") {
-        expect(response.body.message).to.eq("Nenhum registro excluído");
-        cy.getQtdUsers().then((newQtdUsers) => {
-          expect(newQtdUsers).to.eq(qtdUsers);
-        });
-      } else {
-        expect(response.body.message).to.eq("Registro excluído com sucesso");
-        cy.getQtdUsers().then((newQtdUsers) => {
-          expect(newQtdUsers).to.eq(qtdUsers - 1);
-        });
-      }
-    });
-  });
-});
-
-Cypress.Commands.add("getItem", ({ route, _id }) => {
-  cy.request({
-    method: "GET",
-    url: `https://serverest.dev/${route}/${_id}`,
-    failOnStatusCode: false,
-  }).then((response) => {
-    return response;
-  });
-});
-
 Cypress.Commands.add("addItem", ({ route, data, token }) => {
   cy.request({
     method: "POST",
-    url: `https://serverest.dev/${route}`,
+    url: `${Cypress.config("baseUrl")}/${route}`,
     body: data,
     headers: {
       Authorization: token,
@@ -161,12 +41,7 @@ Cypress.Commands.add("addItemToCart", (token) => {
   // Adicionando o produto
   cy.addItem({
     route: "produtos",
-    data: {
-      nome: "Teste Produto QA",
-      preco: 150,
-      descricao: "Produto QA",
-      quantidade: 20,
-    },
+    data: Cypress.env("PRODUCT_DATA"),
     token,
   }).then((response) => {
     const productId = response.body._id;
@@ -177,7 +52,7 @@ Cypress.Commands.add("addItemToCart", (token) => {
         produtos: [
           {
             idProduto: productId,
-            quantidade: 10,
+            quantidade: Cypress.env("QUANTIDADE") - 10,
           },
         ],
       },
@@ -188,14 +63,10 @@ Cypress.Commands.add("addItemToCart", (token) => {
   });
 });
 
-Cypress.Commands.add("deleteItem", ({ route, _id = "testeID", token }) => {
-  // Para verificar o caso de deletar um registro inexistente, basta chamar o comando e não passar o parâmetro "_id"
+Cypress.Commands.add("getItem", ({ route, _id }) => {
   cy.request({
-    method: "DELETE",
-    url: `https://serverest.dev/${route}/${_id}`,
-    headers: {
-      Authorization: token,
-    },
+    method: "GET",
+    url: `${Cypress.config("baseUrl")}/${route}/${_id}`,
     failOnStatusCode: false,
   }).then((response) => {
     return response;
@@ -203,15 +74,16 @@ Cypress.Commands.add("deleteItem", ({ route, _id = "testeID", token }) => {
 });
 
 Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
+  // Cadastra item default com base na rota
   const setData = (route) => {
     const routeData = {
-      "usuarios": {
+      usuarios: {
         nome: Cypress.env("NOME"),
         email: Cypress.env("EMAIL"),
         password: Cypress.env("PASSWORD"),
         administrador: Cypress.env("ADMIN"),
       },
-      "/produtos": {
+      produtos: {
         nome: Cypress.env("NOME_PRODUTO"),
         preco: Cypress.env("PRECO"),
         descricao: Cypress.env("DESCRICAO"),
@@ -222,15 +94,16 @@ Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
     return routeData[route];
   };
 
+  // Edita o item que foi adicionado, com base na rota e no parâmetro passado em "data"
   const setBody = (route, data) => {
     const bodyData = {
-      "usuarios": {
+      usuarios: {
         nome: data.nome || Cypress.env("NOME"),
         email: data.email || Cypress.env("EMAIL"),
         password: data.password || Cypress.env("PASSWORD"),
         administrador: data.admin || Cypress.env("ADMIN"),
       },
-      "/produtos": {
+      produtos: {
         nome: data.nome || Cypress.env("NOME_PRODUTO"),
         preco: data.preco || Cypress.env("PRECO"),
         descricao: data.descricao || Cypress.env("DESCRICAO"),
@@ -249,7 +122,7 @@ Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
     const _id = response.body._id;
     cy.request({
       method: "PUT",
-      url: `https://serverest.dev/${route}/${_id}`,
+      url: `${Cypress.config("baseUrl")}/${route}/${_id}`,
       body: setBody(route, data),
       headers: {
         Authorization: token,
@@ -258,5 +131,19 @@ Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
     }).then((response) => {
       return { response, data: setBody(route, data), _id };
     });
+  });
+});
+
+Cypress.Commands.add("deleteItem", ({ route, _id = "testeID", token }) => {
+  // Para verificar o caso de deletar um registro inexistente, basta chamar o comando e não passar o parâmetro "_id"
+  cy.request({
+    method: "DELETE",
+    url: `${Cypress.config("baseUrl")}/${route}/${_id}`,
+    headers: {
+      Authorization: token,
+    },
+    failOnStatusCode: false,
+  }).then((response) => {
+    return response;
   });
 });
