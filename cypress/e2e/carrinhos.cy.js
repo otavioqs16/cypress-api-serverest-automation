@@ -1,5 +1,5 @@
 const productData = Cypress.env("PRODUCT_DATA");
-const userEmail = `email-${Date.now()}@gmail.com`;
+
 // Carrinho cadastrado por default
 const expectedResult = {
   quantidade: 1,
@@ -32,12 +32,7 @@ describe("ServeRest API Tests - Carrinhos", () => {
     cy.request({
       method: "POST",
       url: `${Cypress.config("baseUrl")}/usuarios`,
-      body: {
-        nome: "QA Automation",
-        email: userEmail,
-        password: "teste",
-        administrador: "true",
-      },
+      body: Cypress.env("USER_DATA"),
     }).then((response) => {
       expect(response.status).to.eq(201);
       userId = response.body._id;
@@ -47,7 +42,7 @@ describe("ServeRest API Tests - Carrinhos", () => {
   beforeEach(() => {
     cy.session(Cypress.env("USER_EMAIL"), () => {
       cy.request("POST", `${Cypress.config("baseUrl")}/login`, {
-        email: userEmail,
+        email: Cypress.env("USER_EMAIL"),
         password: Cypress.env("USER_PASSWORD"),
       }).then((response) => {
         window.localStorage.setItem(
