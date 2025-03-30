@@ -1,4 +1,5 @@
 const productData = Cypress.env("PRODUCT_DATA");
+const userEmail = `email-${Date.now()}@gmail.com`;
 let token, userId;
 
 describe("ServeRest API Tests - Produtos", () => {
@@ -6,7 +7,12 @@ describe("ServeRest API Tests - Produtos", () => {
     cy.request({
       method: "POST",
       url: `${Cypress.config("baseUrl")}/usuarios`,
-      body: Cypress.env("USER_DATA"),
+      body: {
+        nome: "QA Automation",
+        email: userEmail,
+        password: "teste",
+        administrador: "true",
+      },
     }).then((response) => {
       expect(response.status).to.eq(201);
       userId = response.body._id;
@@ -16,7 +22,7 @@ describe("ServeRest API Tests - Produtos", () => {
   beforeEach(() => {
     cy.session(Cypress.env("USER_EMAIL"), () => {
       cy.request("POST", `${Cypress.config("baseUrl")}/login`, {
-        email: Cypress.env("USER_EMAIL"),
+        email: userEmail,
         password: Cypress.env("USER_PASSWORD"),
       }).then((response) => {
         window.localStorage.setItem(
