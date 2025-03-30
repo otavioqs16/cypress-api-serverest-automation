@@ -9,16 +9,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run Cypress tests in order
-        run: |
-          npx cypress run --spec "cypress/e2e/usuarios.cy.js"
-          npx cypress run --spec "cypress/e2e/produtos.cy.js"
-          npx cypress run --spec "cypress/e2e/carrinhos.cy.js"
-          npx cypress run --spec "cypress/e2e/rota_admin.cy.js"
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          record: true
         env:
           CYPRESS_USER_DATA: ${{ secrets.USER_DATA }}
           CYPRESS_USER_EMAIL: ${{ secrets.USER_EMAIL }}
