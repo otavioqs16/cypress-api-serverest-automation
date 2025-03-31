@@ -352,7 +352,7 @@ describe("ServeRest API Tests - Usuários", () => {
         url: `${Cypress.config("baseUrl")}/usuarios?email=emailTest@qa.com`,
       }).then((response) => {
         expect(response.body.quantidade).to.eq(0);
-
+        cy.log(response);
         cy.editItem({
           route: "usuarios",
           data: { nome: "QA AUTOMATION 2" },
