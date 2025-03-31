@@ -9,6 +9,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Secrets
+        run: |
+          echo "Validating Secrets..."
+
+          # Lista de variáveis esperadas
+          secrets_list=(
+            "CYPRESS_USER_DATA"
+            "CYPRESS_USER_EMAIL"
+            "CYPRESS_USER_PASSWORD"
+            "CYPRESS_NEW_USER_DATA"
+            "CYPRESS_NOME"
+            "CYPRESS_EMAIL"
+            "CYPRESS_PASSWORD"
+            "CYPRESS_ADMIN"
+            "CYPRESS_PRODUCT_DATA"
+            "CYPRESS_NOME_PRODUTO"
+            "CYPRESS_PRECO"
+            "CYPRESS_DESCRICAO"
+            "CYPRESS_QUANTIDADE"
+            "CYPRESS_RECORD_KEY"
+          )
+
+          # Verifica se cada secret está definido
+          for secret in "${secrets_list[@]}"; do
+            if [[ -z "${!secret}" ]]; then
+              echo "::error:: Secret $secret is missing or empty!"
+            else
+              echo "✅ $secret is set"
+            fi
+          done
+
+          # Testa se os secrets que deveriam ser JSON são válidos
+          json_secrets=("CYPRESS_USER_DATA" "CYPRESS_NEW_USER_DATA" "CYPRESS_PRODUCT_DATA")
+          for json_secret in "${json_secrets[@]}"; do
+            if echo "${!json_secret}" | jq empty 2>/dev/null; then
+              echo "✅ $json_secret is valid JSON"
+            else
+              echo "::error:: $json_secret is not valid JSON!"
+            fi
+          done
+
       - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
