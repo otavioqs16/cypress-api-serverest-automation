@@ -74,12 +74,13 @@ Cypress.Commands.add("getItem", ({ route, _id }) => {
 });
 
 Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
+  const uniqueEmail = `emailTest-${Date.now()}@qa.com`;
   // Cadastra item default com base na rota
   const setData = (route) => {
     const routeData = {
       usuarios: {
         nome: Cypress.env("NOME"),
-        email: Cypress.env("EMAIL"),
+        email: uniqueEmail,
         password: Cypress.env("PASSWORD"),
         administrador: Cypress.env("ADMIN"),
       },
@@ -99,7 +100,7 @@ Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
     const bodyData = {
       usuarios: {
         nome: data.nome || Cypress.env("NOME"),
-        email: data.email || Cypress.env("EMAIL"),
+        email: data.email || uniqueEmail,
         password: data.password || Cypress.env("PASSWORD"),
         administrador: data.admin || Cypress.env("ADMIN"),
       },
