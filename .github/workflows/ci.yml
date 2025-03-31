@@ -14,6 +14,7 @@ jobs:
         with:
           record: true
         env:
+          DEBUG: cypress:*
           CYPRESS_USER_DATA: ${{ secrets.USER_DATA }}
           CYPRESS_USER_EMAIL: ${{ secrets.USER_EMAIL }}
           CYPRESS_USER_PASSWORD: ${{ secrets.USER_PASSWORD }}

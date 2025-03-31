@@ -401,6 +401,7 @@ describe("ServeRest API Tests - Usuários", () => {
         data: { password: "testeQA123" },
         token,
       }).then(({ response, data, _id }) => {
+        console.log(data.email);
         expect(response.status).to.eq(200);
         cy.getItem({ route: "usuarios", _id }).then((response) => {
           expect(response.status).to.eq(200);
@@ -425,6 +426,7 @@ describe("ServeRest API Tests - Usuários", () => {
         data: { admin: "false" },
         token,
       }).then(({ response, data, _id }) => {
+        console.log(data.email);
         expect(response.status).to.eq(200);
         cy.getItem({ route: "usuarios", _id }).then((response) => {
           expect(response.status).to.eq(200);
