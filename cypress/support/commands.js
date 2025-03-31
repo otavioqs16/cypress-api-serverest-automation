@@ -81,7 +81,7 @@ Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
         nome: Cypress.env("NOME"),
         email: Cypress.env("EMAIL"),
         password: Cypress.env("PASSWORD"),
-        administrador: Cypress.env("ADMIN"),
+        administrador: String(Cypress.env("ADMIN")),
       },
       produtos: {
         nome: Cypress.env("NOME_PRODUTO"),
