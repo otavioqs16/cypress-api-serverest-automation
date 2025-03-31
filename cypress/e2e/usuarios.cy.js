@@ -349,7 +349,7 @@ describe("ServeRest API Tests - Usuários", () => {
     it("Alterar nome do usuário", () => {
       cy.request({
         method: "GET",
-        url: `${Cypress.config("baseUrl")}/usuarios?nome=QA Automation`,
+        url: `${Cypress.config("baseUrl")}/usuarios?email=emailTest@qa.com`,
       }).then((response) => {
         expect(response.body.quantidade).to.eq(0);
 
