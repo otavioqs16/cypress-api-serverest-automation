@@ -347,6 +347,13 @@ describe("ServeRest API Tests - Usuários", () => {
 
   context("PUT /usuarios/{_id}", () => {
     it("Alterar nome do usuário", () => {
+      cy.request({
+        method: "GET",
+        url: `${Cypress.config("baseUrl")}/usuarios?nome=QA Automation`,
+      }).then((response) => {
+        expect(response.body.quantidade).to.eq(0);
+      });
+
       cy.editItem({
         route: "usuarios",
         data: { nome: "QA AUTOMATION 2" },
