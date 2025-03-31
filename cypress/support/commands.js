@@ -114,7 +114,6 @@ Cypress.Commands.add("editItem", ({ route, data = {}, token }) => {
     return bodyData[route];
   };
 
-  console.log(setData(route));
   cy.addItem({
     route,
     data: setData(route),
