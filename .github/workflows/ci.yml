@@ -34,7 +34,7 @@ jobs:
 
           # Verifica se cada secret está definido
           for secret in "${secrets_list[@]}"; do
-            if [[ -z "${!secret}" ]]; then
+            if [[ -z "${{ secrets[secret] }}" ]]; then
               echo "::error:: Secret $secret is missing or empty!"
             else
               echo "✅ $secret is set"
@@ -44,7 +44,7 @@ jobs:
           # Testa se os secrets que deveriam ser JSON são válidos
           json_secrets=("CYPRESS_USER_DATA" "CYPRESS_NEW_USER_DATA" "CYPRESS_PRODUCT_DATA")
           for json_secret in "${json_secrets[@]}"; do
-            if echo "${!json_secret}" | jq empty 2>/dev/null; then
+            if echo "${{ secrets[json_secret] }}" | jq empty 2>/dev/null; then
               echo "✅ $json_secret is valid JSON"
             else
               echo "::error:: $json_secret is not valid JSON!"
