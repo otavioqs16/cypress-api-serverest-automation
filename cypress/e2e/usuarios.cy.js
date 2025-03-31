@@ -352,12 +352,12 @@ describe("ServeRest API Tests - Usuários", () => {
         url: `${Cypress.config("baseUrl")}/usuarios?email=emailTest@qa.com`,
       }).then((response) => {
         expect(response.body.quantidade).to.eq(0);
-        cy.log(response);
         cy.editItem({
           route: "usuarios",
           data: { nome: "QA AUTOMATION 2" },
           token,
         }).then(({ response, data, _id }) => {
+          cy.log(response);
           expect(response.status).to.eq(200);
           cy.getItem({ route: "usuarios", _id }).then((response) => {
             expect(response.status).to.eq(200);
