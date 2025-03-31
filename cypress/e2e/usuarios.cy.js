@@ -357,7 +357,7 @@ describe("ServeRest API Tests - Usuários", () => {
           data: { nome: "QA AUTOMATION 2" },
           token,
         }).then(({ response, data, _id }) => {
-          cy.log(response);
+          console.log(response);
           expect(response.status).to.eq(200);
           cy.getItem({ route: "usuarios", _id }).then((response) => {
             expect(response.status).to.eq(200);
