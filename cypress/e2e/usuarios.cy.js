@@ -78,7 +78,7 @@ describe("ServeRest API Tests - Usuários", () => {
       cy.addItem({
         route: "usuarios",
         data: newUserData,
-        token: Cypress.env("USER_TOKEN"),
+        token,
       }).then((response) => {
         const _id = response.body._id;
         cy.request({
@@ -121,7 +121,7 @@ describe("ServeRest API Tests - Usuários", () => {
       cy.addItem({
         route: "usuarios",
         data: newUserData,
-        token: Cypress.env("USER_TOKEN"),
+        token,
       }).then((response) => {
         const _id = response.body._id;
         cy.request({
@@ -162,10 +162,10 @@ describe("ServeRest API Tests - Usuários", () => {
 
   context("POST /usuarios", () => {
     it("Cadastrar usuário com sucesso", () => {
-      cy.request({
-        method: "POST",
-        url: `${Cypress.config("baseUrl")}/usuarios`,
-        body: newUserData,
+      cy.addItem({
+        route: "usuarios",
+        data: newUserData,
+        token,
       }).then((response) => {
         const _id = response.body._id;
         expect(response.status).to.eq(201);
@@ -274,10 +274,9 @@ describe("ServeRest API Tests - Usuários", () => {
     });
 
     it("Buscar usuário por ID inexistente", () => {
-      cy.request({
-        method: "GET",
-        url: `${Cypress.config("baseUrl")}/usuarios/testeID`,
-        failOnStatusCode: false,
+      cy.getItem({
+        route: "usuarios",
+        _id: "testeID",
       }).then((response) => {
         expect(response.status).to.eq(400);
         expect(response.body.message).to.eq("Usuário não encontrado");
