@@ -352,26 +352,26 @@ describe("ServeRest API Tests - Usuários", () => {
         url: `${Cypress.config("baseUrl")}/usuarios?nome=QA Automation`,
       }).then((response) => {
         expect(response.body.quantidade).to.eq(0);
-      });
 
-      cy.editItem({
-        route: "usuarios",
-        data: { nome: "QA AUTOMATION 2" },
-        token,
-      }).then(({ response, data, _id }) => {
-        expect(response.status).to.eq(200);
-        cy.getItem({ route: "usuarios", _id }).then((response) => {
+        cy.editItem({
+          route: "usuarios",
+          data: { nome: "QA AUTOMATION 2" },
+          token,
+        }).then(({ response, data, _id }) => {
           expect(response.status).to.eq(200);
-          expect(response.body.nome).to.eq(data.nome);
-          expect(response.body.email).to.eq(data.email);
-          expect(response.body.password).to.eq(data.password);
-          expect(response.body.administrador).to.eq(data.administrador);
-          expect(response.body._id).to.eq(_id);
+          cy.getItem({ route: "usuarios", _id }).then((response) => {
+            expect(response.status).to.eq(200);
+            expect(response.body.nome).to.eq(data.nome);
+            expect(response.body.email).to.eq(data.email);
+            expect(response.body.password).to.eq(data.password);
+            expect(response.body.administrador).to.eq(data.administrador);
+            expect(response.body._id).to.eq(_id);
 
-          cy.deleteItem({
-            route: "usuarios",
-            _id,
-            token,
+            cy.deleteItem({
+              route: "usuarios",
+              _id,
+              token,
+            });
           });
         });
       });
