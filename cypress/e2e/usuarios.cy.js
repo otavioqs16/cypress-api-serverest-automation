@@ -453,10 +453,13 @@ describe("ServeRest API Tests - Usuários", () => {
     });
 
     it("Cadastrar usuário utilizando PUT", () => {
-      cy.addItem({
-        route: "usuarios",
-        data: newUserData,
-        token,
+      cy.request({
+        method: "PUT",
+        url: `${Cypress.config("baseUrl")}/usuarios/newUser`,
+        body: newUserData,
+        headers: {
+          Authorization: token,
+        },
       }).then((response) => {
         const _id = response.body._id;
         expect(response.status).to.eq(201);
