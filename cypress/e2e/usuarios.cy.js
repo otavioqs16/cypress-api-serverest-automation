@@ -430,7 +430,7 @@ describe("ServeRest API Tests - Usuários", () => {
     it("Alterar permissão do usuário", () => {
       cy.editItem({
         route: "usuarios",
-        data: { admin: "false" },
+        data: { administrador: "false" },
         token,
       }).then(({ response, data, _id }) => {
         console.log(data.email);
