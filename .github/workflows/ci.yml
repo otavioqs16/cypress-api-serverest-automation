@@ -1,4 +1,4 @@
-name: API testss - ServeRest
+name: API tests - ServeRest
 on: push
 jobs:
   test:
